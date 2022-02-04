@@ -1,0 +1,7 @@
+"0","resumo_guide_pl = resumo_guide %>% 
+  select(Plan_controle,PL,Status_ativo) %>% 
+  group_by(Plan_controle ,Status_ativo) %>% 
+  summarise(PL = sum(PL, na.rm = T)/1000000) 
+"
+"1","`summarise()` has grouped output by 'Plan_controle'. You can override using the `.groups` argument.
+"

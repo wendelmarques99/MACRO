@@ -1,0 +1,459 @@
+
+# Euro zone ---------------------------------------------------------------
+
+# Librarys ----------------------------------------------------------------
+library(ipeadatar)
+library(stringr)
+library(sidrar)
+library(GetBCBData)
+library(BatchGetSymbols)
+library(reticulate)
+library(fredr)
+library(GetTDData)
+library(ggplot2)
+library(rbcb)
+library(BETS)
+library(quantmod)
+library(eurostat)
+library(rdbnomics)
+library(tidyverse)
+library(WDI)
+library(scales)
+library(timetk)
+library(ipeadatar)
+
+# GDP ---------------------------------------------------------------------
+getSymbols.FRED("CLVMEURSCAB1GQEA19",
+                src = "FRED",
+                to = Sys.Date(),
+                env = globalenv())
+
+date <- index(CLVMEURSCAB1GQEA19)
+
+df_gdp_euro_zone <- CLVMEURSCAB1GQEA19 %>% 
+  as_tibble() %>% 
+  mutate(date = date) %>% 
+  mutate(ret = CLVMEURSCAB1GQEA19/lag(CLVMEURSCAB1GQEA19, n = 4) -1, 
+         ret = ret*100) %>% 
+  na.omit() %>% 
+  filter(date >="2011-01-01")
+
+
+df_gdp_euro_zone <- df_gdp_euro_zone %>% 
+  
+  mutate(data_q = c(rep(1:4, 10), 1),
+         data_q = as.yearqtr(
+           paste0(format(date, "%Y"), " Q", data_q))) %>% 
+  rename("value" = "CLVMEURSCAB1GQEA19")
+
+
+
+df_gdp_euro_zone %>% 
+  
+  ggplot(aes(x = data_q,
+             y = ret)) +
+  
+  geom_bar(stat = "identity", 
+           fill = "#181F40",
+           position = "dodge",
+           width = .1) +
+  
+  geom_text(aes(label = paste0(round(ret, 0), "%"),
+                
+                vjust = if_else(ret > 0, -.8, 1.5)),
+            color = "black", size = 2) +
+  
+  xlab("") +
+  
+  ylab("") +
+  
+  labs(title = "PIB - Euro Area",
+       caption = "\nFonte: Eurostat | Dapes Investimentos", 
+  subtitle = "Taxa de crescimento do mesmo período do ano anterior | Ajustado sazonalmente\n") + 
+  
+  ggthemes::theme_fivethirtyeight() +
+  
+  theme(plot.title = element_text(hjust = 0.5, family = "serif"), 
+        plot.subtitle = element_text(hjust = 0.4, family = "serif"), 
+        plot.caption = element_text(family = "serif")) +
+  
+  scale_x_yearqtr(breaks = df_gdp_euro_zone$data_q) + 
+  
+  theme(axis.text.y = element_blank(), 
+        axis.text.x=element_text(angle = 90, 
+                                 hjust = 1))
+# Producao industrial -----------------------------------------------------
+
+getSymbols.FRED("PRINTO01EZQ661S",
+                src = "FRED",
+                to = Sys.Date(),
+                env = globalenv())
+
+date <- index(PRINTO01EZQ661S)
+
+df_indust_prod <- PRINTO01EZQ661S %>% 
+  as_tibble() %>% 
+  mutate(date = date) %>% 
+  mutate(ret = PRINTO01EZQ661S/lag(PRINTO01EZQ661S, n = 4) -1, 
+         ret = ret*100) %>% 
+  filter(date >="2011-01-01")  %>% 
+  
+  mutate(data_q = c(rep(1:4, 10), 1),
+         data_q = as.yearqtr(
+           paste0(format(date, "%Y"), " Q", data_q))) %>% 
+  
+  rename("value" = "PRINTO01EZQ661S")
+
+
+df_indust_prod %>% 
+  
+  ggplot(aes(x = data_q,
+             y = ret)) +
+  
+  geom_bar(stat = "identity", 
+           fill = "#181F40",
+           position = "dodge",
+           width = .1) +
+  
+  geom_text(aes(label = paste0(round(ret, 2), ""),
+                
+                vjust = if_else(ret > 0, -.8, 1.5)),
+            color = "black", size = 2) +
+  
+  xlab("") +
+  
+  ylab("") +
+  
+  labs(title = "Produção industrial - Euro area",
+       caption = "\nFonte: Organization for Economic Co-operation and Development | Dapes Investimentos", 
+  subtitle = "Unidade: Taxa de crescimento do mesmo período do ano anterior\nAjustado sazonalmente") + 
+  
+  ggthemes::theme_fivethirtyeight() +
+  
+  theme(plot.title = element_text(hjust = 0.5, family = "serif"),
+        plot.subtitle = element_text(hjust = 0.5, family = "serif"),
+        plot.caption = element_text(family = "serif")) +
+  
+  scale_x_yearqtr(breaks = df_gdp_euro_zone$data_q) + 
+  theme(axis.text.y = element_blank(), plot.subtitle = element_text(hjust = .5), 
+        axis.text.x=element_text(angle = 90, 
+                                 hjust = 1))
+
+
+# Unemployment ------------------------------------------------------------
+getSymbols.FRED("LRHUTTTTEZM156S",
+                src = "FRED",
+                to = Sys.Date(),
+                env = globalenv())
+
+
+date <- index(LRHUTTTTEZM156S)
+
+df_unemplOy_EZ <- LRHUTTTTEZM156S %>% 
+  
+  as_tibble() %>% 
+  
+  mutate(date = date) %>%
+  
+  rename("value" = LRHUTTTTEZM156S) %>%
+  
+  filter(date >= "2011-01-01") 
+
+
+df_unemplOy_EZ %>% 
+  
+ggplot(aes(x = date,
+           y = value)) +  
+  
+  ggthemes::theme_fivethirtyeight() +
+  
+  scale_x_date(date_breaks = "3 month", 
+               date_labels = "%Y - %m") +  
+  
+  theme(axis.text.x = element_text(angle = 90, 
+                                   hjust = 1)) +
+  
+  geom_line(color = "#181F40", size  = 1) + 
+  
+  xlab("") +
+  
+  ylab("%") +
+  
+  labs(title = "Taxa de desemprego - Euro area",
+       caption = "\nFonte: Organization for Economic Co-operation and Development | Dapes Investimentos", 
+       subtitle = "Ajustado sazonalmente") + 
+  
+  theme(plot.title = element_text(hjust = 0.5, family = "serif"),
+        plot.subtitle = element_text(hjust = 0.5, family = "serif"), 
+        plot.caption = element_text(family = "serif")) +
+  
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) 
+
+# 10 years bonds ----------------------------------------------------------
+getSymbols.FRED("IRLTLT01EZM156N",
+                src = "FRED",
+                to = Sys.Date(),
+                env = globalenv())
+
+
+date <- index(IRLTLT01EZM156N)
+
+
+df_bond_10y <- IRLTLT01EZM156N %>% 
+  
+  as_tibble() %>% 
+  
+  mutate(date = date) %>%
+  
+  rename("value" = IRLTLT01EZM156N) %>%
+  
+  filter(date >= "2011-01-01")
+
+
+df_bond_10y %>% 
+  
+  ggplot(aes(x = date,
+             y = value)) +  
+  
+  ggthemes::theme_fivethirtyeight() +
+  
+  scale_x_date(date_breaks = "3 month", 
+               date_labels = "%Y - %m") +  
+  
+  theme(axis.text.x = element_text(angle = 90, 
+                                   hjust = 1)) +
+  
+  geom_line(color = "#181F40", size  = .7) + 
+  
+  xlab("") +
+  
+  ylab("%") +
+  
+  labs(title = "Bond Yields: 10 - years - Euro Area",
+       caption = "\nFonte: Organization for Economic Co-operation and Development | Dapes Investimentos ") + 
+  
+  theme(plot.title = element_text(hjust = 0.5, family = "serif"),
+        plot.subtitle = element_text(hjust = .5), 
+        plot.caption = element_text(family = "serif")) +
+  
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) + 
+  
+  geom_label(data = filter(df_bond_10y,
+                           date == last(date)),
+             aes(label = round(value, 0)), 
+             color = "#181F40")
+  
+# Txa de juros eurozone ---------------------------------------------------
+getSymbols.FRED("ECBMRRFR", 
+                src = "FRED",
+                to = Sys.Date(),
+                env = globalenv())
+
+
+date <- index(ECBMRRFR)
+
+
+df_juros_ecb <- ECBMRRFR %>% 
+  
+  as_tibble() %>% 
+  
+  mutate(date = date) %>%
+  
+  rename("value" = ECBMRRFR) %>%
+  
+  filter(date >= "2011-01-01")
+
+
+df_juros_ecb %>% 
+  
+  ggplot(aes(x = date,
+             y = value)) +  
+  
+  ggthemes::theme_fivethirtyeight() +
+  
+  scale_x_date(date_breaks = "3 month", 
+               date_labels = "%Y - %m") +  
+  
+  geom_line(color = "#181F40", size  = .7)+
+  
+  scale_y_continuous(labels = function(x) paste0(x*1, "%")) + 
+  
+  geom_label(data = filter(df_juros_ecb,
+                           date == last(date)),
+             aes(label = value), color = "#181F40") +
+  labs(caption = "\nFonte: European Central Bank | Dapes investimentos", 
+       title = "Taxa de juros Euro Area") +
+  theme(axis.text.x = element_text(angle = 90, 
+                                   hjust = 1), 
+        plot.title = element_text(hjust = .5, family = "serif"), 
+        plot.caption = element_text(family = "serif")) 
+  
+
+
+# Inflation ---------------------------------------------------------------
+
+# parei aqui
+
+getSymbols.FRED("CPHPTT01EZM659N",
+                src = "FRED",
+                to = Sys.Date(),
+                env = globalenv())
+
+date <- index(CPHPTT01EZM659N)
+
+
+df_infla_euro <-  CPHPTT01EZM659N %>% 
+  
+  as_tibble() %>% 
+  
+  mutate(date = date) %>%
+  
+  rename("value" = CPHPTT01EZM659N) %>%
+  
+  filter(date >= "2011-01-01") 
+
+
+df_infla_euro %>% 
+  
+  ggplot(aes(x = date,
+             y = value)) +  
+  
+  ggthemes::theme_fivethirtyeight() +
+  
+  scale_x_date(date_breaks = "3 month", 
+               date_labels = "%Y - %m") +  
+  
+  theme(axis.text.x=element_text(angle = 90, 
+                                 hjust = 1)) +
+  
+  geom_bar(stat = "identity", 
+           fill = "#181F40",
+           position = "dodge", width = 15) + 
+  
+  geom_point(color = "#181F40", size = .5)  +
+  
+  xlab("") +
+  
+  labs(title = "Inflação - Euro Area",
+       caption = "\nFonte: Organization for Economic Co-operation and Development | Dapes Investimentos", 
+       subtitle = "Consumer Price Index: Total All Items for Euro Area\nUnidade: Taxa de crescimento do mesmo período do ano anterior") + 
+  
+  theme(plot.title = element_text(hjust = 0.5, 
+                                  family = "serif"),
+        plot.subtitle = element_text(hjust = .5, 
+                                     family = "serif"), 
+        plot.caption = element_text(family = "serif")) + 
+  scale_y_continuous(labels = percent_format(scale = 1))
+  
+
+# Trade balance -----------------------------------------------------------
+eurostat::get_eurostat(id = "teiet210") %>% 
+  
+  filter(geo == "EU27_2020") %>% 
+  
+  ggplot(aes(x = time,
+             y = values/1000)) +  
+  
+  ggthemes::theme_fivethirtyeight() +
+  
+  scale_x_date(date_breaks = "1 month", 
+               date_labels = "%Y - %m") +  
+  
+  theme(axis.text.x=element_text(angle = 90, 
+                                 hjust = 1)) +
+  
+  geom_bar(stat = "identity", 
+           fill = "#181F40",
+           position = "dodge",
+           width = 8) + 
+  
+  geom_text(aes(label = round(values/1000, 2),
+                
+                vjust = if_else(values > 0, -.8, 1.5)),
+             
+            color = "black") + 
+  
+  labs(title = "Balança comercial - Euro Area",
+       caption = "\nFonte: Eurostat | Dapes Investimentos", 
+       subtitle = "Em bilhões") +  
+  
+  theme(plot.title = element_text(hjust = 0.5, 
+                                  family = "serif"),
+        
+        axis.text.y = element_blank(),
+        
+        plot.subtitle = element_text(hjust = .5, 
+                                     family = "serif"), 
+        plot.caption = element_text(family = "serif")) 
+
+
+# Total Debt Public -------------------------------------------------------
+
+dados <- get_eurostat_toc()
+
+df_debt_euro <- get_eurostat("sdg_17_40") %>% 
+  
+  filter(geo == "EA19" & unit == "PC_GDP")
+
+df_debt_euro %>% 
+  
+  ggplot(aes(x = time, y = values)) + 
+  
+  geom_line(color = "#181F40", size = .8) + 
+  
+  ggthemes::theme_fivethirtyeight() + 
+  
+  labs(title = "Dívida Pública - Euro Area", subtitle = "% do PIB", 
+       caption = "\nFonte: Eurostat | Dapes Investimentos") + 
+  
+  theme(plot.title = element_text(hjust = 0.5, 
+                                  family = "serif"),
+        plot.subtitle = element_text(hjust = .5,
+                                     family = "serif")) +  
+  
+  annotate("text", 
+           x = df_debt_euro$time[nrow(df_debt_euro)] + 1,
+           y = df_debt_euro$values[nrow(df_debt_euro)]+ 1,
+           label = round(df_debt_euro$values[nrow(df_debt_euro)], 2),
+           color = "black",
+           size = 3) 
+
+
+
+
+# GDP Per Capita ----------------------------------------------------------
+
+df_GDP_per_capita <- get_eurostat("sdg_08_10") %>% 
+  
+  filter(geo == "EA19" & unit == "CLV10_EUR_HAB")
+
+  
+df_GDP_per_capita %>% 
+  
+  ggplot(aes(x = time, y = values)) + 
+  
+  geom_line(color = "#181F40", size = .5) + 
+  
+  ggthemes::theme_fivethirtyeight() + 
+  
+  labs(title = "PIB PER CAPITA - Euro Area", subtitle = "Em €", 
+       caption = "\nFonte: Eurostat | Dapes Investimentos") + 
+  
+  theme(plot.title = element_text(hjust = 0.5, 
+                                  family = "serif"),
+        plot.subtitle = element_text(hjust = .5,
+                                     family = "serif"), 
+        plot.caption = element_text(family = "serif")) +  
+  
+  annotate("text", 
+           x = df_GDP_per_capita$time[nrow(df_GDP_per_capita)] + 1,
+           y = df_GDP_per_capita$values[nrow(df_GDP_per_capita)] - 50,
+           label = round(df_GDP_per_capita$values[nrow(df_GDP_per_capita)], 2),
+           color = "black",
+           size = 3) + 
+  scale_y_continuous(labels= function(x) format(x, 
+                                                big.mark = ".",
+                                                decimal.mark = ",",
+                                                scientific = FALSE))
+
+  

@@ -1,0 +1,10 @@
+"0","# detalher de PL por produto
+produto_pl = dados_migracao %>% 
+  filter(!`Status Safra` == ""Migração Cancelada"") %>% 
+  select(Cliente, CPF, Produto, Valor, Data,`Status Safra`) %>% 
+  mutate(Data = as.Date(Data, '%d/%m/%Y')) %>% 
+  group_by(Produto,`Status Safra`) %>% 
+  summarise(PL = sum(Valor, na.rm = T)/1000000) 
+"
+"1","`summarise()` has grouped output by 'Produto'. You can override using the `.groups` argument.
+"
